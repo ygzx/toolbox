@@ -1,0 +1,15 @@
+# 系统/编辑器文件
+.DS_Store
+Thumbs.db
+*.swp
+
+# 依赖/构建产物
+node_modules/
+dist/
+build/
+
+# 日志
+*.log
+
+# 工作区记忆（不纳入仓库）
+.workbuddy/

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图片压缩工具</title>
+<style>
+  :root {
+    --bg: #1a1b1e;
+    --panel: #24262b;
+    --panel-2: #2d2f35;
+    --border: #3a3d44;
+    --text: #e6e8eb;
+    --muted: #9aa0a8;
+    --accent: #4f8cff;
+    --accent-hover: #6ea0ff;
+    --green: #3fb950;
+    --red: #f85149;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  .container { max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    background: var(--panel);
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: var(--panel-2);
+  }
+  .drop-zone p { color: var(--muted); font-size: 14px; }
+  .drop-zone .big { font-size: 16px; color: var(--text); margin-bottom: 6px; }
+
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+    background: var(--panel);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .field .val { color: var(--accent); font-weight: 600; }
+  select, input[type="number"] {
+    width: 100%;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .row input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  button {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover:not(:disabled) { background: var(--accent-hover); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+
+  .stats { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .stats b { color: var(--text); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .card .thumb { background: #111; height: 180px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .card .thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .card .info { padding: 12px 14px; font-size: 13px; }
+  .card .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px; }
+  .card .sizes { display: flex; justify-content: space-between; color: var(--muted); }
+  .card .sizes .after { color: var(--green); text-align: right; }
+  .card .save { margin-top: 6px; font-size: 12px; }
+  .card .card-actions { padding: 0 14px 14px; display: flex; gap: 8px; }
+  .card .card-actions button { flex: 1; padding: 7px; font-size: 13px; }
+  .badge { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 11px; }
+  .badge.up { background: rgba(248,81,73,.15); color: var(--red); }
+  .badge.down { background: rgba(63,185,80,.15); color: var(--green); }
+  .empty { color: var(--muted); text-align: center; padding: 30px; font-size: 14px; }
+  footer { margin-top: 30px; text-align: center; color: var(--muted); font-size: 12px; }
+  .back-bar { position: sticky; top: 0; z-index: 20; background: rgba(26,27,30,.82); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+  .back-bar a { display: inline-flex; align-items: center; gap: 6px; height: 52px; font-size: 14px; color: var(--muted); }
+  .back-bar a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="back-bar"><div class="container"><a href="../index.html">← 返回工具箱</a></div></div>
+<div class="container">
+  <h1>🗜️ 图片压缩工具</h1>
+  <p class="subtitle">纯本地运行，图片不会上传到任何服务器 · 支持 JPEG / PNG / WebP</p>
+
+  <div class="drop-zone" id="dropZone">
+    <div class="big">点击选择图片，或拖拽到此处</div>
+    <p>可一次选择多张图片（JPG / PNG / WebP / GIF）</p>
+    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+  </div>
+
+  <div class="controls">
+    <div class="field">
+      <label>输出格式</label>
+      <select id="format">
+        <option value="image/jpeg">JPEG（体积小，适合照片）</option>
+        <option value="image/webp">WebP（更优压缩，浏览器支持）</option>
+        <option value="image/png">PNG（无损，适合图形/透明）</option>
+        <option value="keep">保持原格式</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>压缩质量：<span class="val" id="qualityVal">80%</span></label>
+      <input type="range" id="quality" min="10" max="100" value="80">
+      <label style="margin-top:6px;"><span class="row"><input type="checkbox" id="qualityEnable" checked><span>启用质量压缩</span></span></label>
+    </div>
+    <div class="field">
+      <label>最大边长（px，0 = 不限制）</label>
+      <input type="number" id="maxDim" min="0" step="10" value="0" placeholder="例如 1920">
+      <label style="margin-top:6px;"><span class="row"><input type="checkbox" id="keepRatio" checked><span>保持宽高比</span></span></label>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="compressBtn" disabled>开始压缩</button>
+    <button id="downloadAllBtn" disabled>下载全部</button>
+    <button id="clearBtn" disabled>清空列表</button>
+  </div>
+
+  <div class="stats" id="stats"></div>
+  <div class="grid" id="grid"><div class="empty">还没有图片，先选择或拖入一些图片吧。</div></div>
+
+  <footer>提示：质量越低 / 尺寸越小，文件越小，但画质也会下降。PNG 格式下质量滑块不生效。</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const dropZone = $('dropZone'), fileInput = $('fileInput');
+const formatSel = $('format'), qualitySlider = $('quality'), qualityVal = $('qualityVal');
+const qualityEnable = $('qualityEnable'), maxDim = $('maxDim'), keepRatio = $('keepRatio');
+const compressBtn = $('compressBtn'), downloadAllBtn = $('downloadAllBtn'), clearBtn = $('clearBtn');
+const statsEl = $('stats'), grid = $('grid');
+
+let files = [];        // {id, file, url, status, result, origSize, newSize, blob, name}
+let uid = 0;
+
+qualitySlider.oninput = () => qualityVal.textContent = qualitySlider.value + '%';
+
+dropZone.onclick = () => fileInput.click();
+fileInput.onchange = e => { addFiles(e.target.files); fileInput.value = ''; };
+['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.add('dragover'); }));
+['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.remove('dragover'); }));
+dropZone.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+
+function addFiles(list) {
+  for (const f of list) {
+    if (!f.type.startsWith('image/')) continue;
+    const rec = { id: ++uid, file: f, url: URL.createObjectURL(f), status: 'pending', origSize: f.size, name: f.name };
+    files.push(rec);
+  }
+  render();
+}
+
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  return (b/1024/1024).toFixed(2) + ' MB';
+}
+
+function render() {
+  if (files.length === 0) {
+    grid.innerHTML = '<div class="empty">还没有图片，先选择或拖入一些图片吧。</div>';
+  } else {
+    grid.innerHTML = files.map(r => {
+      const orig = fmtSize(r.origSize);
+      let mid = '';
+      if (r.status === 'done' && r.newSize != null) {
+        const after = fmtSize(r.newSize);
+        const diff = r.newSize - r.origSize;
+        const pct = (diff / r.origSize * 100);
+        const badge = diff <= 0
+          ? `<span class="badge down">↓ ${Math.abs(pct).toFixed(1)}%</span>`
+          : `<span class="badge up">↑ ${pct.toFixed(1)}%</span>`;
+        mid = `<div class="sizes"><span>原图<br>${orig}</span><span class="after">压缩后<br>${after}</span></div>
+               <div class="save">${badge}${diff > 0 ? ' 文件变大了（已尽量优化）' : ' 已节省空间'}</div>`;
+      } else if (r.status === 'pending') {
+        mid = `<div class="sizes"><span>原图<br>${orig}</span><span class="after">待压缩</span></div>`;
+      }
+      const dlBtn = r.status === 'done' ? `<button onclick="downloadOne(${r.id})">下载</button>` : '';
+      return `<div class="card">
+        <div class="thumb"><img src="${r.url}"></div>
+        <div class="info">
+          <div class="name" title="${r.name}">${r.name}</div>
+          ${mid}
+        </div>
+        <div class="card-actions">
+          ${dlBtn}
+          <button onclick="removeOne(${r.id})">移除</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  const has = files.length > 0;
+  compressBtn.disabled = !has;
+  clearBtn.disabled = !has;
+  downloadAllBtn.disabled = !files.some(f => f.status === 'done');
+  updateStats();
+}
+
+function updateStats() {
+  const done = files.filter(f => f.status === 'done');
+  if (files.length === 0) { statsEl.innerHTML = ''; return; }
+  let totalOrig = 0, totalNew = 0;
+  done.forEach(f => { totalOrig += f.origSize; totalNew += f.newSize; });
+  const ratio = totalOrig > 0 ? (1 - totalNew/totalOrig)*100 : 0;
+  statsEl.innerHTML = `共 <b>${files.length}</b> 张，已压缩 <b>${done.length}</b> 张 · 原始 <b>${fmtSize(totalOrig)}</b> → 压缩后 <b>${fmtSize(totalNew)}</b> · 整体节省 <b style="color:var(--green)">${ratio.toFixed(1)}%</b>`;
+}
+
+function getOutType(type) {
+  const fmt = formatSel.value;
+  if (fmt === 'keep') return type === 'image/png' ? 'image/png' : (type === 'image/webp' ? 'image/webp' : 'image/jpeg');
+  return fmt;
+}
+
+async function compressOne(rec) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      const max = parseInt(maxDim.value) || 0;
+      if (max > 0 && Math.max(width, height) > max) {
+        const scale = max / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      const outType = getOutType(rec.file.type);
+      // JPEG/WebP 无透明通道，填充白底避免黑边
+      if (outType !== 'image/png') { ctx.fillStyle = '#fff'; ctx.fillRect(0,0,width,height); }
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const useQuality = qualityEnable.checked && outType !== 'image/png';
+      const q = useQuality ? parseInt(qualitySlider.value)/100 : undefined;
+      const ext = outType === 'image/png' ? 'png' : (outType === 'image/webp' ? 'webp' : 'jpg');
+      const baseName = rec.name.replace(/\.[^.]+$/, '');
+      canvas.toBlob(blob => {
+        rec.status = 'done';
+        rec.blob = blob;
+        rec.newSize = blob.size;
+        rec.outName = baseName + '_compressed.' + ext;
+        resolve();
+      }, outType, q);
+    };
+    img.onerror = () => { rec.status = 'error'; resolve(); };
+    img.src = rec.url;
+  });
+}
+
+compressBtn.onclick = async () => {
+  compressBtn.disabled = true;
+  for (const rec of files) {
+    if (rec.status === 'pending') {
+      await compressOne(rec);
+      render();
+    }
+  }
+  compressBtn.disabled = false;
+  render();
+};
+
+function downloadOne(id) {
+  const rec = files.find(f => f.id === id);
+  if (!rec || !rec.blob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(rec.blob);
+  a.download = rec.outName || ('image_' + id + '.jpg');
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+downloadAllBtn.onclick = () => {
+  files.filter(f => f.status === 'done').forEach((rec, i) => {
+    setTimeout(() => downloadOne(rec.id), i * 300);
+  });
+};
+
+function removeOne(id) {
+  const i = files.findIndex(f => f.id === id);
+  if (i >= 0) { URL.revokeObjectURL(files[i].url); files.splice(i, 1); render(); }
+}
+
+clearBtn.onclick = () => {
+  files.forEach(f => URL.revokeObjectURL(f.url));
+  files = []; render();
+};
+
+render();
+</script>
+</body>
+</html>

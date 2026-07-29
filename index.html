@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的小工具箱 · Toolbox</title>
+<meta name="description" content="一个收纳自制小工具的网站，纯前端、可离线使用。">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a class="brand" href="index.html">
+      <span class="logo">🧰</span>
+      <span>小工具箱</span>
+    </a>
+    <div class="nav-links">
+      <a href="#tools">工具</a>
+      <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>
+      <a href="#about">关于</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero container">
+  <span class="eyebrow">Pure Frontend · 100% Local</span>
+  <h1>我的<span class="grad">小工具箱</span></h1>
+  <p>把常用的小工具都收纳在这里。全部在浏览器本地运行，不上传任何数据，打开即用。</p>
+</header>
+
+<main class="container">
+  <section class="section" id="tools">
+    <div class="section-head">
+      <h2>全部工具</h2>
+      <span class="count" id="toolCount">1 个可用</span>
+    </div>
+
+    <div class="grid">
+      <a class="card" href="tools/image-compressor.html">
+        <div class="icon">🗜️</div>
+        <h3>图片压缩工具</h3>
+        <p>拖入图片即可压缩体积，支持 JPEG / WebP / PNG，可调质量与最大尺寸，批量下载。</p>
+        <div class="meta">
+          <span class="tag live">可用</span>
+          <span>· 单文件 · 离线</span>
+        </div>
+      </a>
+
+      <div class="card" style="opacity:.72;">
+        <div class="icon">✨</div>
+        <h3>更多工具筹备中</h3>
+        <p>计划加入：二维码生成、JSON 格式化、时间戳转换、图片转 Base64 等。有想法欢迎提 Issue。</p>
+        <div class="meta">
+          <span class="tag soon">即将推出</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="about" style="padding-top:40px;">
+    <div class="section-head"><h2>关于本站</h2></div>
+    <p style="color:var(--muted); font-size:14px; max-width:680px;">
+      这是一个开源的纯静态工具站，所有工具都是单文件 HTML，无需后端、无需联网即可使用。
+      源码托管在 GitHub，欢迎自取、改造成你自己的工具箱。
+    </p>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    用 ❤️ 与 HTML 打造 · 部署于
+    <a href="https://pages.github.com" target="_blank" rel="noopener">GitHub Pages</a>
+    <br>© <span id="year"></span> 小工具箱
+  </div>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
