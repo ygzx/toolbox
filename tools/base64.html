@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Base64 工具</title>
+<style>
+  :root{
+    --bg:#1a1b1e;--panel:#24262b;--panel-2:#2d2f35;--border:#3a3d44;
+    --text:#e6e8eb;--muted:#9aa0a8;--accent:#4f8cff;--accent-hover:#6ea0ff;--green:#3fb950;--red:#f85149;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.5;padding:24px;min-height:100vh}
+  .back-bar{position:sticky;top:0;z-index:20;background:rgba(26,27,30,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .back-bar a{display:inline-flex;align-items:center;gap:6px;height:52px;font-size:14px;color:var(--muted)}
+  .back-bar a:hover{color:var(--accent)}
+  .container{max-width:900px;margin:0 auto}
+  h1{font-size:22px;font-weight:600;margin:24px 0 4px}
+  .subtitle{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+  .card h2{font-size:15px;font-weight:600;margin-bottom:14px}
+  .bar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+  button{background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;transition:.15s}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{background:var(--accent-hover)}
+  textarea{width:100%;min-height:130px;background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.5;resize:vertical}
+  textarea:focus{outline:none;border-color:var(--accent)}
+  label{font-size:13px;color:var(--muted)}
+  .drop{border:2px dashed var(--border);border-radius:10px;padding:22px;text-align:center;color:var(--muted);cursor:pointer;background:var(--panel-2);transition:.15s}
+  .drop:hover{border-color:var(--accent);color:var(--text)}
+  .preview{margin-top:12px;max-height:220px;overflow:auto;text-align:center;background:#111;border-radius:10px;padding:10px}
+  .preview img{max-width:100%;max-height:200px}
+  .status{margin-top:10px;font-size:13px;min-height:18px}
+  .status.ok{color:var(--green)} .status.err{color:var(--red)}
+  .lbl{font-size:13px;color:var(--muted);margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="back-bar"><div class="container"><a href="../index.html">← 返回工具箱</a></div></div>
+<div class="container">
+  <h1>🔤 Base64 工具</h1>
+  <p class="subtitle">文本 Base64 编解码 + 图片转 Base64(data URL)，纯本地运行。</p>
+
+  <div class="card">
+    <h2>文本编解码</h2>
+    <div class="bar">
+      <button class="primary" onclick="enc()">编码 →</button>
+      <button onclick="dec()">← 解码</button>
+      <span style="flex:1"></span>
+      <button onclick="copyText()">复制输出</button>
+      <button onclick="clearText()">清空</button>
+    </div>
+    <div class="lbl">输入</div>
+    <textarea id="tIn" placeholder="输入文本或 Base64 字符串"></textarea>
+    <div class="lbl" style="margin-top:10px">输出</div>
+    <textarea id="tOut" placeholder="结果"></textarea>
+    <div class="status" id="tStatus"></div>
+  </div>
+
+  <div class="card">
+    <h2>图片 → Base64</h2>
+    <div class="drop" id="drop" onclick="fileInput.click()">点击选择图片，或拖拽到此处</div>
+    <input type="file" id="fileInput" accept="image/*" hidden>
+    <div class="preview" id="preview" style="display:none"></div>
+    <div class="bar" style="margin-top:12px">
+      <button onclick="copyImg()">复制 data URL</button>
+      <button onclick="downloadImg()">下载 .txt</button>
+    </div>
+    <textarea id="imgOut" placeholder="生成的数据 URL 会显示在这里（可直接贴进 img 标签或 CSS）" style="margin-top:8px"></textarea>
+    <div class="status" id="iStatus"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+function tStatus(m,t){ const s=$('tStatus'); s.textContent=m; s.className='status '+(t||''); }
+function iStatus(m,t){ const s=$('iStatus'); s.textContent=m; s.className='status '+(t||''); }
+
+function utf8ToB64(str){ return btoa(unescape(encodeURIComponent(str))); }
+function b64ToUtf8(b64){ return decodeURIComponent(escape(atob(b64))); }
+
+function enc(){ try{ $('tOut').value=utf8ToB64($('tIn').value); tStatus('✓ 编码成功','ok'); }catch(e){ tStatus('✗ 编码失败：'+e.message,'err'); } }
+function dec(){ try{ $('tOut').value=b64ToUtf8($('tIn').value.trim()); tStatus('✓ 解码成功','ok'); }catch(e){ tStatus('✗ 不是合法的 Base64','err'); } }
+function copyText(){ if(!$('tOut').value){tStatus('没有内容','err');return;} navigator.clipboard.writeText($('tOut').value).then(()=>tStatus('✓ 已复制','ok')); }
+function clearText(){ $('tIn').value=''; $('tOut').value=''; tStatus(''); }
+
+const fileInput=$('fileInput'), drop=$('drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor='var(--accent)';}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor='';}));
+drop.addEventListener('drop',e=>handleFile(e.dataTransfer.files[0]));
+fileInput.onchange=e=>handleFile(e.target.files[0]);
+
+function handleFile(f){
+  if(!f||!f.type.startsWith('image/')){ iStatus('请选择图片文件','err'); return; }
+  const r=new FileReader();
+  r.onload=()=>{
+    $('imgOut').value=r.result;
+    $('preview').style.display='block';
+    $('preview').innerHTML='<img src="'+r.result+'">';
+    iStatus('✓ 已生成 data URL（'+Math.round(r.result.length/1024)+' KB 字符串）','ok');
+  };
+  r.readAsDataURL(f);
+}
+function copyImg(){ if(!$('imgOut').value){iStatus('没有内容','err');return;} navigator.clipboard.writeText($('imgOut').value).then(()=>iStatus('✓ 已复制','ok')); }
+function downloadImg(){ if(!$('imgOut').value){iStatus('没有内容','err');return;} const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([$('imgOut').value])); a.download='base64.txt'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
+</script>
+</body>
+</html>

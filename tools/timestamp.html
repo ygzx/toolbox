@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>时间戳转换工具</title>
+<style>
+  :root{
+    --bg:#1a1b1e;--panel:#24262b;--panel-2:#2d2f35;--border:#3a3d44;
+    --text:#e6e8eb;--muted:#9aa0a8;--accent:#4f8cff;--accent-hover:#6ea0ff;--green:#3fb950;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.5;padding:24px;min-height:100vh}
+  .back-bar{position:sticky;top:0;z-index:20;background:rgba(26,27,30,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .back-bar a{display:inline-flex;align-items:center;gap:6px;height:52px;font-size:14px;color:var(--muted)}
+  .back-bar a:hover{color:var(--accent)}
+  .container{max-width:900px;margin:0 auto}
+  h1{font-size:22px;font-weight:600;margin:24px 0 4px}
+  .subtitle{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+  .card h2{font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text)}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
+  button{background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;transition:.15s}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{background:var(--accent-hover)}
+  input,select{background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px}
+  input[type=number]{width:220px}
+  label{font-size:13px;color:var(--muted)}
+  .val{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;color:var(--accent);word-break:break-all}
+  .big{font-size:26px;font-weight:700;color:var(--text);font-family:ui-monospace,Menlo,Consolas,monospace}
+  .kv{display:grid;grid-template-columns:120px 1fr;gap:8px 14px;align-items:center}
+  .kv .k{color:var(--muted);font-size:13px}
+  .note{font-size:12px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="back-bar"><div class="container"><a href="../index.html">← 返回工具箱</a></div></div>
+<div class="container">
+  <h1>⏱️ 时间戳转换工具</h1>
+  <p class="subtitle">Unix 时间戳与日期互转，支持秒/毫秒、本地与 UTC。</p>
+
+  <div class="card">
+    <h2>当前时间</h2>
+    <div class="big" id="nowTs">—</div>
+    <div class="row" style="margin-top:12px">
+      <label>单位
+        <select id="unit">
+          <option value="s">秒 (s)</option>
+          <option value="ms">毫秒 (ms)</option>
+        </select>
+      </label>
+      <button onclick="copyNow()">复制</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>时间戳 → 日期</h2>
+    <div class="row">
+      <input type="number" id="tsIn" placeholder="输入时间戳，如 1700000000">
+      <select id="tsUnit"><option value="s">秒</option><option value="ms">毫秒</option></select>
+      <button class="primary" onclick="tsToDate()">转换</button>
+    </div>
+    <div class="kv" id="tsOut"></div>
+    <div class="note">秒级时间戳为 10 位，毫秒级为 13 位。自动识别失败时手动选单位。</div>
+  </div>
+
+  <div class="card">
+    <h2>日期 → 时间戳</h2>
+    <div class="row">
+      <input type="datetime-local" id="dateIn" step="1">
+      <button class="primary" onclick="dateToTs()">转换</button>
+      <button onclick="useNow()">填入当前</button>
+    </div>
+    <div class="kv" id="dateOut"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+function copyNow(){ const t=$('nowTs').textContent; if(t!=='—') navigator.clipboard.writeText(t); }
+
+function tick(){
+  const unit=$('unit').value;
+  const now=Date.now();
+  $('nowTs').textContent = unit==='s' ? Math.floor(now/1000) : now;
+}
+setInterval(tick,1000); tick();
+
+function tsToDate(){
+  let v=parseInt($('tsIn').value,10);
+  if(isNaN(v)){ $('tsOut').innerHTML='<span class="k">错误</span><span style="color:var(--red)">请输入有效时间戳</span>'; return; }
+  if($('tsUnit').value==='s') v*=1000;
+  const d=new Date(v);
+  if(isNaN(d.getTime())){ $('tsOut').innerHTML='<span class="k">错误</span><span style="color:var(--red)">无法解析</span>'; return; }
+  $('tsOut').innerHTML=`
+    <span class="k">本地时间</span><span class="val">${d.toLocaleString()}</span>
+    <span class="k">UTC</span><span class="val">${d.toUTCString()}</span>
+    <span class="k">ISO 8601</span><span class="val">${d.toISOString()}</span>`;
+}
+function dateToTs(){
+  const v=$('dateIn').value;
+  if(!v){ $('dateOut').innerHTML='<span class="k">错误</span><span style="color:var(--red)">请选择日期时间</span>'; return; }
+  const d=new Date(v);
+  const ms=d.getTime();
+  $('dateOut').innerHTML=`
+    <span class="k">毫秒 (ms)</span><span class="val">${ms}</span>
+    <span class="k">秒 (s)</span><span class="val">${Math.floor(ms/1000)}</span>`;
+}
+function useNow(){
+  const d=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  $('dateIn').value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+useNow();
+</script>
+</body>
+</html>

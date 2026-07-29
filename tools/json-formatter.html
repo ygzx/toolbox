@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON 格式化工具</title>
+<style>
+  :root{
+    --bg:#1a1b1e;--panel:#24262b;--panel-2:#2d2f35;--border:#3a3d44;
+    --text:#e6e8eb;--muted:#9aa0a8;--accent:#4f8cff;--accent-hover:#6ea0ff;
+    --green:#3fb950;--red:#f85149;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.5;padding:24px;min-height:100vh}
+  .back-bar{position:sticky;top:0;z-index:20;background:rgba(26,27,30,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .back-bar a{display:inline-flex;align-items:center;gap:6px;height:52px;font-size:14px;color:var(--muted)}
+  .back-bar a:hover{color:var(--accent)}
+  .container{max-width:900px;margin:0 auto}
+  h1{font-size:22px;font-weight:600;margin:24px 0 4px}
+  .subtitle{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+  button{background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 15px;font-size:14px;cursor:pointer;transition:.15s}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{background:var(--accent-hover)}
+  select,input[type=number]{background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px}
+  label{font-size:13px;color:var(--muted)}
+  textarea{width:100%;min-height:300px;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.5;resize:vertical}
+  textarea:focus{outline:none;border-color:var(--accent)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .status{margin-top:10px;font-size:13px;min-height:18px}
+  .status.ok{color:var(--green)} .status.err{color:var(--red)}
+  .lbl{font-size:13px;color:var(--muted);margin-bottom:6px}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="back-bar"><div class="container"><a href="../index.html">← 返回工具箱</a></div></div>
+<div class="container">
+  <h1>🔧 JSON 格式化工具</h1>
+  <p class="subtitle">格式化 / 压缩 / 校验 JSON，纯本地运行，不上传数据。</p>
+
+  <div class="bar">
+    <button class="primary" onclick="format()">格式化</button>
+    <button onclick="minify()">压缩</button>
+    <button onclick="validate()">校验</button>
+    <label>缩进
+      <select id="indent">
+        <option value="2">2 空格</option>
+        <option value="4">4 空格</option>
+        <option value="\t">Tab</option>
+      </select>
+    </label>
+    <span style="flex:1"></span>
+    <button onclick="copyOut()">复制结果</button>
+    <button onclick="downloadOut()">下载 .json</button>
+    <button onclick="clearAll()">清空</button>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <div class="lbl">输入</div>
+      <textarea id="in" placeholder='在此粘贴 JSON，例如：{"name":"工具箱","tools":3}'></textarea>
+    </div>
+    <div>
+      <div class="lbl">输出</div>
+      <textarea id="out" placeholder="处理结果会显示在这里"></textarea>
+    </div>
+  </div>
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+function setStatus(msg, type){ const s=$('status'); s.textContent=msg; s.className='status '+(type||''); }
+function parse(t){ return JSON.parse(t); }
+
+function format(){
+  try{
+    const v=parse($('in').value);
+    const ind=$('indent').value;
+    $('out').value=JSON.stringify(v,null,ind==='\t'?'\t':Number(ind));
+    setStatus('✓ 格式化成功，'+JSON.stringify(v).length+' 字符', 'ok');
+  }catch(e){ setStatus('✗ 解析失败：'+e.message, 'err'); }
+}
+function minify(){
+  try{
+    const v=parse($('in').value);
+    $('out').value=JSON.stringify(v);
+    setStatus('✓ 已压缩', 'ok');
+  }catch(e){ setStatus('✗ 解析失败：'+e.message, 'err'); }
+}
+function validate(){
+  try{ parse($('in').value); setStatus('✓ JSON 合法', 'ok'); }
+  catch(e){ setStatus('✗ 不合法：'+e.message, 'err'); }
+}
+function copyOut(){
+  if(!$('out').value){ setStatus('没有可复制的内容', 'err'); return; }
+  navigator.clipboard.writeText($('out').value).then(()=>setStatus('✓ 已复制到剪贴板','ok'));
+}
+function downloadOut(){
+  if(!$('out').value){ setStatus('没有可下载的内容','err'); return; }
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([$('out').value],{type:'application/json'}));
+  a.download='data.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function clearAll(){ $('in').value=''; $('out').value=''; setStatus(''); }
+</script>
+</body>
+</html>
